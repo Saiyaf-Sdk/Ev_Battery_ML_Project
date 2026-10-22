@@ -1,0 +1,6 @@
+{
+  "python.defaultInterpreterPath": "C:\\Users\\Sajath\\anaconda3\\python.exe",
+  "python.analysis.extraPaths": [
+    "./src"
+  ]
+}

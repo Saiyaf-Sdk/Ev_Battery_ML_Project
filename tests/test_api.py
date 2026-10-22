@@ -3,9 +3,13 @@ import numpy as np
 import pytest
 
 
-fastapi = pytest.importorskip("fastapi")
-from fastapi.testclient import TestClient
-from evbattery.api import app
+try:
+    from fastapi.testclient import TestClient
+    from evbattery.api import app
+except ImportError:
+    TestClient = None
+    app = None
+
 
 
 
@@ -23,8 +27,11 @@ class FakeModel:
 
 
 def test_api_auth_and_schemas(monkeypatch):
+    if TestClient is None or app is None:
+        pytest.skip("fastapi is not installed (Member D optional dependency)")
     monkeypatch.setenv('EV_API_KEY', 'example-secret')
     app.state.bundle = {
+
         'model': FakeModel(),
         'threshold': 0.25,
         'metadata': {
