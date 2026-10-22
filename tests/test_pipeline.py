@@ -1,9 +1,9 @@
 import numpy as np
 import pandas as pd
 import pytest
-from sklearn.metrics import average_precision_score
 
 from evbattery.config import TARGET, IDENTIFIERS, SUSPECT_SCORES
+
 from evbattery.data import make_features, split_data, load_dataset
 from evbattery.evaluation import choose_threshold, evaluate
 from evbattery.modeling import pipe_for, candidate_models

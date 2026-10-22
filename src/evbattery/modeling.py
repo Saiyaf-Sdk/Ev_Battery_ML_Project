@@ -42,6 +42,82 @@ def preprocessing(x: pd.DataFrame) -> ColumnTransformer:
     return ColumnTransformer(parts, remainder="drop", sparse_threshold=0.0)
 
 
+MODEL_PROPERTIES: dict[str, dict[str, object]] = {
+    "dummy_prior": {
+        "family": "Baseline",
+        "interpretable": "Trivial baseline",
+        "scaling_required": False,
+        "nonlinear": False,
+        "advantages": "Fast no-skill sanity check; establishes minimum baseline prevalence AP",
+        "weaknesses": "Zero predictive capacity; predicts constant prior probability",
+    },
+    "logistic_regression": {
+        "family": "Linear",
+        "interpretable": "High (signed odds-ratio coefficients)",
+        "scaling_required": True,
+        "nonlinear": False,
+        "advantages": "Well-calibrated probabilities, fast training, convex loss, transparent weights",
+        "weaknesses": "Cannot model nonlinear sensor interactions without explicit cross-terms",
+    },
+    "gaussian_naive_bayes": {
+        "family": "Probabilistic / Generative",
+        "interpretable": "High (feature-conditional Gaussian likelihoods)",
+        "scaling_required": False,
+        "nonlinear": True,
+        "advantages": "Extremely fast closed-form fit, no optimization hyperparameters",
+        "weaknesses": "Strong conditional independence assumption; sensitive to correlated telemetry",
+    },
+    "sgd_logistic": {
+        "family": "Linear / Stochastic Online",
+        "interpretable": "High (linear weights)",
+        "scaling_required": True,
+        "nonlinear": False,
+        "advantages": "O(N) linear time streaming solver, minimal memory footprint",
+        "weaknesses": "Sensitive to learning rate / alpha schedule; noisier convergence than L-BFGS",
+    },
+    "decision_tree": {
+        "family": "Tree",
+        "interpretable": "High (visualizable if shallow)",
+        "scaling_required": False,
+        "nonlinear": True,
+        "advantages": "Handles mixed scales natively, captures orthogonal feature thresholds",
+        "weaknesses": "High variance, step-function decision boundaries, prone to overfitting",
+    },
+    "random_forest": {
+        "family": "Ensemble (Bagging)",
+        "interpretable": "Moderate (Gini / permutation importance)",
+        "scaling_required": False,
+        "nonlinear": True,
+        "advantages": "Reduces variance via bootstrap aggregation; robust to outliers and noisy sensors",
+        "weaknesses": "Slower training with many trees, uncalibrated risk probabilities near 0 and 1",
+    },
+    "adaboost": {
+        "family": "Ensemble (Boosting)",
+        "interpretable": "Moderate (weighted sum of decision stumps)",
+        "scaling_required": False,
+        "nonlinear": True,
+        "advantages": "Sequentially focuses weight on hard/borderline battery failure samples",
+        "weaknesses": "Sensitive to label noise and severe outliers; can overfit without learning-rate shrinkage",
+    },
+    "hist_gradient_boost": {
+        "family": "Ensemble (Gradient Boosting)",
+        "interpretable": "Low-Moderate (tree ensemble / partial dependence)",
+        "scaling_required": False,
+        "nonlinear": True,
+        "advantages": "State-of-the-art tabular accuracy, histogram binning (fast), native NaN handling",
+        "weaknesses": "Complex hyperparameter space, requires monotonic constraints or regularization",
+    },
+    "knn": {
+        "family": "Instance-based",
+        "interpretable": "Low-Moderate (nearest neighbor exemplars)",
+        "scaling_required": True,
+        "nonlinear": True,
+        "advantages": "Non-parametric; no explicit training phase; local neighborhood boundaries",
+        "weaknesses": "O(N·D) query inference time; curse of dimensionality across 63 features",
+    },
+}
+
+
 def candidate_models(fast: bool = False, include_knn: bool = False) -> dict[str, object]:
     """Seven efficient classifiers by default; optional expensive KNN + dummy."""
     models = {
@@ -69,10 +145,20 @@ def pipe_for(x: pd.DataFrame, estimator: object) -> Pipeline:
     return Pipeline([("preprocess", preprocessing(x)), ("model", estimator)])
 
 
-def cv_leaderboard(x: pd.DataFrame, y: pd.Series, *, fast: bool = False, seed: int = RANDOM_STATE, model_names: set[str] | None = None):
+def cv_leaderboard(
+    x: pd.DataFrame,
+    y: pd.Series,
+    *,
+    fast: bool = False,
+    include_knn: bool = False,
+    include_properties: bool = False,
+    seed: int = RANDOM_STATE,
+    model_names: set[str] | None = None,
+) -> pd.DataFrame:
+    """Evaluate candidate classifiers with 3-fold stratified CV on training data only."""
     folds = StratifiedKFold(n_splits=3, shuffle=True, random_state=seed)
     rows = []
-    models = candidate_models(fast=fast)
+    models = candidate_models(fast=fast, include_knn=include_knn)
     if model_names is not None:
         models = {n: m for n, m in models.items() if n in model_names}
         if not models:
@@ -84,11 +170,18 @@ def cv_leaderboard(x: pd.DataFrame, y: pd.Series, *, fast: bool = False, seed: i
             scoring={"ap": "average_precision", "roc_auc": "roc_auc"},
             n_jobs=1, error_score="raise", return_train_score=False,
         )
-        rows.append({
+        row = {
             "model": name,
             "cv_average_precision_mean": float(np.mean(scores["test_ap"])),
             "cv_average_precision_std": float(np.std(scores["test_ap"])),
             "cv_roc_auc_mean": float(np.mean(scores["test_roc_auc"])),
-        })
+            "cv_roc_auc_std": float(np.std(scores["test_roc_auc"])),
+            "fit_time_mean": float(np.mean(scores["fit_time"])),
+            "score_time_mean": float(np.mean(scores["score_time"])),
+        }
+        if include_properties and name in MODEL_PROPERTIES:
+            row.update(MODEL_PROPERTIES[name])
+        rows.append(row)
     # Dummy is only a reference, never a deployable winner.
     return pd.DataFrame(rows).sort_values("cv_average_precision_mean", ascending=False).reset_index(drop=True)
+

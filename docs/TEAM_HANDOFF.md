@@ -17,12 +17,15 @@ Member A's part (data profiling, EDA, leakage and feature-set audit) is complete
 
 **Golden rules:** never open the test split until the final evaluation; fit every imputer/scaler/sampler/selector inside CV training folds; never quote smoke-test (`--fast`) numbers.
 
-## Member B — supervised models, CV and tuning (plan days 4–6, 9)
+## Member B — supervised models, CV and tuning (plan days 4–6, 9) — COMPLETED
 
-1. `python -m evbattery.experiments --data data/ev_battery.csv --max-rows 2500` (median vs KNN imputation, L1 selection, correlation pruning).
-2. `python -m evbattery.train --data data/ev_battery.csv --outdir artifacts` — the 7-model CV leaderboard (`model_cv_leaderboard.csv`). Build the comparison table (algorithm, interpretable?, needs scaling?, nonlinear?, AP mean/SD, ROC AUC).
-3. Tune the CV winner: `python -m evbattery.tune --data data/ev_battery.csv --model <winner> --n-iter 10`, then retrain with `--tuning-file`.
-4. Tip from the audit: random forest is weakest (AP ≈ 0.64) and boosting/logistic are close (≈ 0.72–0.73). Strongly correlated groups (health / SoH, ambient avg / max / min, cell_voltage_std / voltage_imbalance) remain — mention this when interpreting coefficients.
+1. Preprocessing experiments completed (`artifacts/member_b/preprocessing_comparison.csv`): confirmed median imputation with missing indicators matches KNN imputation without quadratic latency penalty.
+2. Supervised model comparison leaderboard generated across 7 classical algorithms + dummy + KNN (`artifacts/member_b/model_cv_leaderboard.csv`).
+3. Dedicated leakage-safe entrypoint created: `python -m evbattery.member_b --data data/ev_battery.csv --outdir artifacts/member_b`. It strictly operates on the 60% training partition; calibration, threshold, and test partitions are never accessed.
+4. Hyperparameter tuning completed on training partition via `RandomizedSearchCV` (`artifacts/member_b/tuning_results.json`).
+5. Handoff model artifact exported: `artifacts/member_b/best_base_model.joblib` and selection metadata `artifacts/member_b/selected_model.json`.
+6. Full documentation delivered: `docs/MEMBER_B_MODELING_REPORT.md`, `docs/MEMBER_B_LEARNING_GUIDE.md`, `docs/MEMBER_B_HANDOFF.md`, and automated test suite `tests/test_member_b.py`.
+
 
 ## Member C — imbalance, calibration, thresholds, evaluation (plan days 7, 8, 10)
 

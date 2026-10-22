@@ -1,8 +1,13 @@
-import os
 from types import SimpleNamespace
 import numpy as np
+import pytest
+
+
+fastapi = pytest.importorskip("fastapi")
 from fastapi.testclient import TestClient
 from evbattery.api import app
+
+
 
 
 class FakeModel:

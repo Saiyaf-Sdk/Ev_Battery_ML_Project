@@ -9,4 +9,6 @@ artifacts/*
 *.pkl
 *.pickle
 *.csv
+*.egg-info/
 .DS_Store
+
