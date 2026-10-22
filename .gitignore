@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+.pytest_cache/
+*.py[cod]
+.env
+artifacts/*
+!artifacts/.gitkeep
+*.joblib
+*.pkl
+*.pickle
+*.csv
+.DS_Store
