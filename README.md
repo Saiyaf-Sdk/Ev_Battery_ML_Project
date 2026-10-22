@@ -11,6 +11,10 @@ src/evbattery/
   config.py         # guarded target/identifier/composite score exclusions
   data.py           # data validation, 60/10/10/20 stratified split, features
   quality.py        # missing values, correlations, data-quality profile
+  eda.py            # Member A: profiling, 36 plausibility checks, EDA tables + figures
+  feature_catalog.py# Member A: provenance + keep/drop decision for all 70 columns
+  leakage_audit.py  # Member A: split check, AUC screen, composite study, feature-set ablation
+  plot_style.py     # shared colour-blind-safe chart style (Healthy = blue, Failure = orange)
   modeling.py       # 7 efficient classifiers + optional KNN + dummy, CV inside train only
   evaluation.py     # precision, recall, F1/F2, AP, ROC, MCC, Brier score
   train.py          # model selection + separate calibration + alarm tuning + one test
@@ -25,11 +29,31 @@ src/evbattery/
   example_request.py # example API payload generator
   api.py            # authenticated FastAPI educational demonstration
 
+data/                # put ev_battery.csv here (ignored by Git, see data/README.md)
 artifacts/           # generated locally, ignored by Git
+learning_log.md      # one observation per working day
 
 tests/               # automated assertions
 docs/                # 14-day learning schedule, interview bank, report template
 ```
+
+## Team status
+
+| Member | Area | Status |
+|---|---|---|
+| A | Data profiling, EDA, leakage and feature-set audit | **Done** — see `docs/MEMBER_A_DATA_AUDIT.md`, `docs/TEAM_HANDOFF.md` |
+| B | Supervised models, CV, tuning | Next |
+| C | Imbalance, calibration, thresholds, evaluation | After B |
+| D | Unsupervised, explanation, API, integration/testing | In parallel with C |
+
+Member A commands (dataset at `data/ev_battery.csv`):
+
+```bash
+python -m evbattery.eda           --data data/ev_battery.csv --outdir artifacts/eda
+python -m evbattery.leakage_audit --data data/ev_battery.csv --outdir artifacts/leakage_audit
+```
+
+**Feature set:** `make_features()` now also drops three exact duplicate columns by default (63 model inputs). See `docs/FEATURE_DICTIONARY.md`.
 
 ## 1. Setup (Python 3.11+ recommended)
 
