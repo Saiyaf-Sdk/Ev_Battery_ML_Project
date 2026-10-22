@@ -18,7 +18,7 @@ from sklearn.calibration import CalibratedClassifierCV
 from sklearn.frozen import FrozenEstimator
 from sklearn.model_selection import train_test_split
 
-from .config import IDENTIFIERS, RANDOM_STATE, SUSPECT_SCORES, TARGET
+from .config import IDENTIFIERS, RANDOM_STATE, REDUNDANT_EXACT, SUSPECT_SCORES, TARGET
 from .data import load_dataset, make_features, split_data
 from .evaluation import choose_threshold, evaluate
 from .modeling import candidate_models, cv_leaderboard, pipe_for
@@ -109,6 +109,7 @@ def run_training(data_path: Path, outdir: Path, fast: bool = False,
         "include_suspect_scores": include_suspect_scores,
         "excluded_identifiers": list(IDENTIFIERS),
         "excluded_suspect_scores": [] if include_suspect_scores else list(SUSPECT_SCORES),
+        "excluded_redundant_columns": list(REDUNDANT_EXACT),
         "raw_feature_columns": [c for c in df.columns if c not in (TARGET, *IDENTIFIERS)],
         "engineered_feature_columns": x_train.columns.tolist(),
         "train_n": len(splits.train), "cv_ranking_train_n": len(x_cv),

@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
-from .config import IDENTIFIERS, RANDOM_STATE, SUSPECT_SCORES, TARGET
+from .config import IDENTIFIERS, RANDOM_STATE, REDUNDANT_EXACT, SUSPECT_SCORES, TARGET
 
 
 @dataclass(frozen=True)
@@ -71,11 +71,19 @@ def _safe_divide(a: pd.Series, b: pd.Series) -> pd.Series:
     return answer.replace([np.inf, -np.inf], np.nan)
 
 
-def make_features(raw: pd.DataFrame, include_suspect_scores: bool = False) -> pd.DataFrame:
-    """Only per-row transformations: no fitting, no target access, no global statistics."""
+def make_features(raw: pd.DataFrame, include_suspect_scores: bool = False,
+                  drop_redundant: bool = True) -> pd.DataFrame:
+    """Only per-row transformations: no fitting, no target access, no global statistics.
+
+    drop_redundant=True (default since the Member A audit) removes columns that are
+    exact formulas of other columns (config.REDUNDANT_EXACT). The 3-fold CV ablation
+    showed no measurable loss from removing them; see docs/MEMBER_A_DATA_AUDIT.md.
+    """
     banned = {TARGET, *IDENTIFIERS}
     if not include_suspect_scores:
         banned.update(SUSPECT_SCORES)
+    if drop_redundant:
+        banned.update(REDUNDANT_EXACT)
     x = raw.drop(columns=list(banned), errors="ignore").copy()
     additions = {
         "cell_temp_max_minus_avg": ("cell_temperature_max", "cell_temperature_avg"),

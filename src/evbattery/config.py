@@ -15,4 +15,11 @@ SUSPECT_SCORES = (
     "predicted_remaining_life_cycles",
     "maintenance_score",
 )
+# Exact deterministic copies of other columns (Member A audit, see
+# docs/MEMBER_A_DATA_AUDIT.md). Not leakage, just duplicated information.
+REDUNDANT_EXACT = (
+    "capacity_loss_percent",   # = 100 - battery_health_percent
+    "remaining_capacity",      # = battery_capacity_kwh * battery_health_percent / 100
+    "manufacturing_year",      # = 2026 - vehicle_age_years (+/- 1 year)
+)
 RANDOM_STATE = 42
