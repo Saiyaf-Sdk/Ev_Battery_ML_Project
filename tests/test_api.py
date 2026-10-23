@@ -4,7 +4,7 @@ import pytest
 
 
 try:
-    from fastapi.testclient import TestClient
+    from fastapi.testclient import TestClient  # type: ignore
     from evbattery.api import app
 except ImportError:
     TestClient = None

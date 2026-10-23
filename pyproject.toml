@@ -21,3 +21,7 @@ testpaths = ["tests"]
 pythonpath = ["src"]
 addopts = "-q"
 
+[tool.pyright]
+pythonPath = "C:\\Users\\Sajath\\anaconda3\\python.exe"
+extraPaths = ["src"]
+
