@@ -14,21 +14,29 @@
 
 | Metric | Measured value |
 |---|---|
-| Average precision | TODO |
-| ROC AUC | TODO |
-| Brier score | TODO |
-| Precision | TODO |
-| Recall | TODO |
-| F1 | TODO |
-| F2 | TODO |
-| True positives | TODO |
-| False positives | TODO |
-| True negatives | TODO |
-| False negatives | TODO |
+| Average precision | 0.751260 |
+| ROC AUC | 0.975719 |
+| Brier score | 0.028534 |
+| Precision | 0.468354 |
+| Recall | 0.935018 |
+| F1 | 0.624096 |
+| F2 | 0.779651 |
+| True positives | 259 |
+| False positives | 294 |
+| True negatives | 3429 |
+| False negatives | 18 |
 
 ## Discussion
 
-Describe the missed-failure vs false-alarm trade-off using **final test** values. Explain whether performance changed relative to threshold-validation results. Do not change the threshold based on the observed test metrics.
+### Discussion of Final Results
+
+The final model was evaluated using 4,000 unseen test records. The selected classification threshold was 0.10, which had been chosen using the separate threshold-validation dataset.
+
+Out of 277 actual battery failure records, the model correctly detected 259 and missed 18. The recall was 93.50%, while precision was 46.84%. The F2 score was 0.7797.
+
+The model achieved a high failure detection rate, but it also produced 294 false-positive warnings. This shows the trade-off between detecting more failures and generating unnecessary alerts.
+
+The final results were close to those obtained during validation. However, the dataset is simulated, so further testing with real EV battery data would be required before practical deployment.
 
 ## Figures
 
