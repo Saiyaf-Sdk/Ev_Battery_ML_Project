@@ -90,7 +90,7 @@ def compare(x: pd.DataFrame, y: pd.Series, cv_splits: int = 3, seed: int = RANDO
         ('knn_imputation', 'knn', None),
         ('median_corr_prune_0.97', 'median', CorrelationPruner(threshold=0.97)),
         ('median_embedded_L1_select', 'median',
-         SelectFromModel(LogisticRegression(penalty='l1', solver='liblinear', C=0.3,
+         SelectFromModel(LogisticRegression(l1_ratio=1.0, solver='liblinear', C=0.3,
                                             random_state=seed))),
     ]
     for name, imputer, extra in configurations:

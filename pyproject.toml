@@ -19,8 +19,7 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
-addopts = "-q"
+addopts = "-q --disable-warnings"
 
 [tool.pyright]
 extraPaths = ["src"]
-
