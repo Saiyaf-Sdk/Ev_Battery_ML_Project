@@ -5,7 +5,7 @@
 ## Project contents
 
 ```
-README.md
+README.md, menu.ps1
 requirements.txt, pyproject.toml, .gitignore, .env.example
 src/evbattery/
   config.py         # guarded target/identifier/composite score exclusions
@@ -28,6 +28,7 @@ src/evbattery/
   costs.py          # hypothetical warning costs, threshold validation only
   example_request.py # example API payload generator
   api.py            # authenticated FastAPI educational demonstration
+  ui.py             # interactive console dashboard with human-readable cards
 
 data/                # put ev_battery.csv here (ignored by Git, see data/README.md)
 artifacts/           # generated locally, ignored by Git
@@ -42,128 +43,196 @@ docs/                # 14-day learning schedule, interview bank, report template
 | Member | Area | Status |
 |---|---|---|
 | A | Data profiling, EDA, leakage and feature-set audit | **Done** — see `docs/MEMBER_A_DATA_AUDIT.md`, `docs/TEAM_HANDOFF.md` |
-| B | Supervised models, CV, tuning | Next |
-| C | Imbalance, calibration, thresholds, evaluation | After B |
-| D | Unsupervised, explanation, API, integration/testing | In parallel with C |
+| B | Supervised models, CV, tuning | **Done** — see `docs/MEMBER_B_HANDOFF.md`, `docs/MEMBER_B_MODELING_REPORT.md` |
+| C | Imbalance, calibration, thresholds, evaluation | **Done** — see `docs/MEMBER_C_FINAL_RESULTS.md` |
+| D | Unsupervised, explanation, API, integration/testing | **Done** — see `docs/member_d_results.md` |
 
-Member A commands (dataset at `data/ev_battery.csv`):
+**Feature set:** `make_features()` drops three exact duplicate columns by default (63 model inputs). See `docs/FEATURE_DICTIONARY.md`.
 
-```bash
-python -m evbattery.eda           --data data/ev_battery.csv --outdir artifacts/eda
-python -m evbattery.leakage_audit --data data/ev_battery.csv --outdir artifacts/leakage_audit
+---
+
+## ⚡ Quick Start: Interactive Dashboard (Recommended)
+
+To run the project with an easy-to-use menu that shows clean, color-coded summaries instead of raw JSON walls:
+
+### Windows PowerShell:
+```powershell
+# 1. Activate environment
+.\.venv\Scripts\Activate.ps1
+
+# 2. Run the interactive menu
+.\menu.ps1
+```
+*(Or run `python -m evbattery.ui`)*
+
+```text
+========================================================================
+   [*] EV BATTERY HEALTH & FAILURE ML -- INTERACTIVE DASHBOARD [*]
+========================================================================
+  What would you like to do?
+
+  [1] Code Health Check         Run unit tests (clean & quiet)
+  [2] Dataset Quality Check     Vehicle counts, missing data, health %
+  [3] Explore Telemetry (EDA)   Key sensor patterns & failure graphs
+  [4] Leakage & Safety Audit    Verify fair, cheat-free evaluation
+  [5] Train & Compare Models    Leaderboard of 7 ML algorithms
+  [6] Explain Model Decisions   Top sensors driving risk alerts
+  [7] Plain-English ML Guide    Demystify machine learning jargon
+  [0] Exit
+========================================================================
+Select an option [0-7]: 
 ```
 
-**Feature set:** `make_features()` now also drops three exact duplicate columns by default (63 model inputs). See `docs/FEATURE_DICTIONARY.md`.
+---
 
-## 1. Setup (Python 3.11+ recommended)
+## 🛠️ Setup Instructions (Python 3.11+ recommended)
 
-Unzip the folder. Open a terminal in its root. Place the existing CSV anywhere convenient: **do not edit the original**.
+Unzip the folder. Open a terminal in its root. Place `ev_battery.csv` in `data/`:
 
-```bash
+### Windows PowerShell:
+```powershell
 python -m venv .venv
-# Linux/macOS:
-source .venv/bin/activate
-# Windows PowerShell:
-# .venv\Scripts\Activate.ps1
+
+# If script execution is restricted on Windows:
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+
+.\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 python -m pip install -e .
-python -m pytest
+pytest
 ```
 
-## 2. Dataset quality checks
-
-Use your actual path to the uploaded CSV in place of `PATH/TO/ev_battery.csv` below. Quotes are important when your filename contains spaces.
-
+### Linux / macOS:
 ```bash
-python -m evbattery.quality --data "PATH/TO/ev_battery.csv"
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -e .
+pytest
 ```
 
-Outputs: `artifacts/data_profile.json`.
+---
 
-## 3. Working model — from data to evaluation
+## 📋 Step-by-Step Running Instructions (Command Line)
 
+If you prefer running individual commands directly:
+
+### 1. Run Automated Unit Tests
 ```bash
-# Quick functional smoke test; DO NOT quote its results in your report.
-python -m evbattery.train --data "PATH/TO/ev_battery.csv" --outdir artifacts
+pytest
+```
+Verifies data split integrity, preprocessing pipelines, model factories, and leakage protections across 33 tests.
 
-# Resource-conscious comparison: rank all default algorithms on 4k TRAIN-only rows,
-# still fit winning model on 12k train rows and evaluate on full 4k holdout.
-# Document the smaller CV sample explicitly when reporting:
-python -m evbattery.train --data "PATH/TO/ev_battery.csv" --outdir artifacts/resource_limited --cv-max-rows 4000/smoke --fast
+### 2. Dataset Quality Checks
+```bash
+python -m evbattery.quality --data data/ev_battery.csv
+```
+Profiles fleet records (20,000 cars), class imbalance (6.92% failure rate), missing cells across 67 columns, and collinear sensor pairs. Saves `artifacts/data_profile.json`.
 
-# Fast first checkpoint on ALL 20k rows: logistic regression + dummy only.
-# Do not present this as the required 5+-algorithm comparison.
-python -m evbattery.train --data "PATH/TO/ev_battery.csv" --outdir artifacts/baseline --baseline-only
+### 3. Exploratory Data Analysis (EDA)
+```bash
+python -m evbattery.eda --data data/ev_battery.csv --outdir artifacts/eda
+```
+Generates 7 statistical figures under `artifacts/eda/figures/` (distributions, boxplots, correlation heatmap) and checks 36 dataset plausibility flags.
 
-# Full, CV-ranked classical ML comparison, once you are ready:
-python -m evbattery.train --data "PATH/TO/ev_battery.csv" --outdir artifacts
+### 4. Leakage & Feature Safety Audit
+```bash
+python -m evbattery.leakage_audit --data data/ev_battery.csv --outdir artifacts/leakage_audit
+```
+Audits univariate ROC AUC separation, verifies zero split overlap across 60/10/10/20 partitions, and evaluates feature-set ablation (justifying the exclusion of composite risk scores and dropping 3 redundant copies to arrive at 63 features).
+
+### 5. Supervised Model Training & Evaluation
+
+#### A. Full Training Pipeline (Model selection, Platt calibration, threshold tuning, and holdout test):
+```bash
+python -m evbattery.train --data data/ev_battery.csv --outdir artifacts
+```
+* Uses 3-fold Stratified CV on 60% train partition to rank 7 algorithms + dummy baseline using **Average Precision (AP)**.
+* Fits Platt/sigmoid calibration on the 10% calibration partition.
+* Tunes decision threshold for $F_2$-score on the 10% threshold partition.
+* Evaluates **once** on the untouched 20% holdout test partition.
+* Outputs: `artifacts/model_cv_leaderboard.csv`, `artifacts/threshold_validation_metrics.json`, `artifacts/test_metrics.json`, `artifacts/model.joblib`.
+
+#### B. Resource-Conscious / Fast Benchmark:
+```bash
+python -m evbattery.train --data data/ev_battery.csv --outdir artifacts/resource_limited --cv-max-rows 4000 --fast
 ```
 
-**Full training** holds out 20% test data. The optional `--cv-max-rows` reduces only the computational sample used for model ranking; that should be disclosed in the report. It uses stratified 60% fitting, 10% independent Platt/sigmoid calibration, 10% F2-based decision-threshold choice and 20% untouched final test. The train-only 3-fold CV ranks 7 classical algorithms (KNN optional due to computational expense) using **average precision** (scikit-learn AP, which is not a trapezoidal PR-AUC estimate), plus a dummy reference. Class-imbalance comparisons and imputation variations are separate development experiments. The default final model does not automatically incorporate a sampler winner: if that experiment proves helpful, implement its winning method in the final CV training pipeline, then rerun the documented procedure **without selecting on final test outcomes**.
+### 6. Explainability & Feature Importance
+```bash
+python -m evbattery.explain --data data/ev_battery.csv --model artifacts/model.joblib
+```
+Computes permutation feature importance on the validation partition to identify the top sensors driving failure warnings. Outputs `artifacts/permutation_importance.csv`.
 
-Generated outputs: `model_cv_leaderboard.csv`, `threshold_validation_metrics.json`, `test_metrics.json`, `split_counts.csv`, `metadata.json`, `model.joblib`.
-
-## 4. Other experiments — use development folds, not holdout test
+### 7. Other Research Experiments (Development Folds Only)
 
 ```bash
-python -m evbattery.experiments --data "PATH/TO/ev_battery.csv" --max-rows 2500
-# Run after CV identifies the most promising model (e.g., adaboost).
-python -m evbattery.tune --data "PATH/TO/ev_battery.csv" --model adaboost --n-iter 10
-# When the tuning-file model matches the baseline CV winner, train again using:
-# python -m evbattery.train --data "PATH/TO/ev_battery.csv" --outdir artifacts --tuning-file artifacts/tuned_params.json
-python -m evbattery.imbalance --data "PATH/TO/ev_battery.csv"
-python -m evbattery.unsupervised --data "PATH/TO/ev_battery.csv"
-python -m evbattery.explain --data "PATH/TO/ev_battery.csv" --model artifacts/model.joblib
-python -m evbattery.leakage_study --data "PATH/TO/ev_battery.csv"
-python -m evbattery.costs --data "PATH/TO/ev_battery.csv" --model artifacts/model.joblib
-python -m evbattery.charts --data "PATH/TO/ev_battery.csv" --mode eda
-python -m evbattery.charts --data "PATH/TO/ev_battery.csv" --mode final --model artifacts/model.joblib --outdir artifacts/final_figures
+# Imputation and correlation pruning experiments on training sample:
+python -m evbattery.experiments --data data/ev_battery.csv --max-rows 2500
+
+# Hyperparameter tuning via RandomizedSearchCV (train CV only):
+python -m evbattery.tune --data data/ev_battery.csv --model hist_gradient_boost --n-iter 10
+
+# Class-imbalance strategy comparison (SMOTE-NC, class weighting, undersampling):
+python -m evbattery.imbalance --data data/ev_battery.csv
+
+# Unsupervised anomaly detection & clustering (PCA, K-Means, Isolation Forest):
+python -m evbattery.unsupervised --data data/ev_battery.csv
+
+# Illustrative false-alarm vs missed-failure economic costs:
+python -m evbattery.costs --data data/ev_battery.csv --model artifacts/model.joblib
 ```
 
-The capped `experiments.py` sample supports faster KNN imputation experiments; treat those as preliminary, not a full-dataset conclusion. The unsupervised models never see labels during fit. Label-based enrichment is analyzed afterward for research.
+---
 
-### Model inspection
+## 🌐 8. Demonstration API (Local Development Only)
 
-`artifacts/test_metrics.json` is the final holdout **only once**. Prefer average precision, recall, F2, precision and false positives, not accuracy alone. The split counts and class baseline should always be included. A positive result on a simulated dataset cannot prove performance on physical vehicles.
+After full training, test the authenticated FastAPI inference server:
 
-## 5. Demonstration API (LOCAL DEVELOPMENT ONLY)
-
-After full training, generate a sample request:
-
+### 1. Generate an example request payload:
 ```bash
-python -m evbattery.example_request --data "PATH/TO/ev_battery.csv"
-# Linux/macOS example — replace this placeholder with a real secret kept outside Git:
-export EV_API_KEY='your-long-random-secret'
+python -m evbattery.example_request --data data/ev_battery.csv
+```
+
+### 2. Start the API server:
+
+**Windows PowerShell:**
+```powershell
+$env:EV_API_KEY="test-secret-key"
+$env:EV_MODEL_PATH="artifacts/model.joblib"
+uvicorn evbattery.api:app --host 127.0.0.1 --port 8000
+```
+
+**Linux / macOS:**
+```bash
+export EV_API_KEY='test-secret-key'
 export EV_MODEL_PATH='artifacts/model.joblib'
 uvicorn evbattery.api:app --host 127.0.0.1 --port 8000
 ```
 
-In another terminal:
-
+### 3. Send a test prediction in another terminal:
 ```bash
-curl -X POST http://127.0.0.1:8000/predict \
-  -H "X-API-Key: your-long-random-secret" \
-  -H "Content-Type: application/json" \
+curl -X POST http://127.0.0.1:8000/predict ^
+  -H "X-API-Key: test-secret-key" ^
+  -H "Content-Type: application/json" ^
   --data-binary @artifacts/example_request.json
 ```
 
-For Windows PowerShell: `$env:EV_API_KEY="..."`; `$env:EV_MODEL_PATH="artifacts/model.joblib"`. The API intentionally refuses smoke-test artifacts, optional composite-score experiments, missing API keys and unknown features. A prediction is an **experimental score**, not a certified physical failure probability.
+---
 
-## Security / reliability guidance
+## 🔒 Security & Reliability Guidance
 
-- No real EV, BMS or vehicle access should be connected. Bind `127.0.0.1` only. **Do not deploy publicly** without TLS termination, a trusted identity provider, request body limits, rate limiting, input range rules, observability, a dependency vulnerability review and risk assessment.
-- `joblib` uses Python pickle. **NEVER load model files uploaded by clients or taken from untrusted sources.** Load only your locally trained artifact.
-- Code is checked by automated tests, but crash-free or secure production operation cannot be guaranteed without environment-specific testing, threat modeling and monitoring.
-- Keep secrets in environment variables and raw fleet telemetry outside your public Git repository. `.gitignore` ignores CSV and model artifacts.
-- Save source revision, dataset hash, random seed and Python package versions for reproducibility. Keep a **frozen final test** and don't repeatedly compare configurations on it.
-- For real forecasting, request timestamps, a formal prediction horizon, battery-level repeated histories, and a forward-in-time/grouped evaluation.
+- Bind `127.0.0.1` only. **Do not deploy publicly** without TLS termination, trusted auth, rate limiting, payload validation, and threat modeling.
+- `joblib` uses Python pickle. **NEVER load model files from untrusted sources.** Load only locally trained artifacts.
+- Keep secrets in environment variables and raw fleet telemetry outside Git.
+- Save dataset hash, random seed (`42`), and package versions for reproducibility. Keep a **frozen final test** and never repeatedly tune configurations on it.
 
 ## What this starter does NOT claim
 
 1. No guaranteed prediction lead time: there are no temporal labels or event horizons.
-2. Synthetic risk scores are removed by default due to unknown provenance, but leakage risk in other sensor-derived features remains to be audited with the data generator or domain owner.
-3. The code does not guarantee a model above any metric threshold. Report actual measured results, including weak findings.
+2. Synthetic risk scores are removed by default due to unknown provenance.
+3. The code does not guarantee a model above any metric threshold; report actual measured results.
 4. Model comparison does not prove that a particular imbalance strategy is best until experiments demonstrate it.
 5. A local API demo is not a safety-critical deployment.
 
-See `docs/DAY_BY_DAY_PLAN.md` for exactly what to learn and accomplish each day and `docs/INTERVIEW_PREP.md` for interview questions and explanations.
+See `docs/DAY_BY_DAY_PLAN.md` for learning objectives and `docs/INTERVIEW_PREP.md` for viva questions and answers.
